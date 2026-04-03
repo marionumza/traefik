@@ -1,32 +1,35 @@
-# docker-compose.yml
-version: '3.7'
- 
+version: "3.8"
 services:
   traefik:
-    image: traefik:latest
+    image: traefik:v2.10
     container_name: traefik
-    restart: always
+    hostname: traefik
+    restart: unless-stopped
     security_opt:
       - no-new-privileges:true
-    ports:
-      - 80:80
-      - 443:443
-    volumes:
-      - /etc/localtime:/etc/localtime:ro
-      - /var/run/docker.sock:/var/run/docker.sock:ro
-      - ./data/traefik.yml:/traefik.yml:ro
-      - ./data/acme.json:/acme.json
-      - ./data/configurations:/configurations
+    environment:
+      - DOCKER_API_VERSION=1.40
     networks:
       - inverseproxy_shared
-    labels:
-      - "traefik.enable=true"
-      - "traefik.docker.network=inverseproxy_shared"
-      - "traefik.http.routers.traefik-secure.entrypoints=websecure"
-      - "traefik.http.routers.traefik-secure.rule=Host(`crumges.com`)"
-      - "traefik.http.routers.traefik-secure.middlewares=user-auth@file"
-      - "traefik.http.routers.traefik-secure.service=api@internal"
- 
+      - public
+      - private
+    ports:
+      - "80:80"
+      - "443:443"
+    volumes:
+      - /etc/localtime:/etc/localtime:ro
+      - ./traefik.yml:/traefik.yml:ro
+      - /var/run/docker.sock:/var/run/docker.sock:ro
+      - ./acme.json:/acme.json
+
 networks:
   inverseproxy_shared:
-    external: true
+    name: inverseproxy_shared
+    internal: true
+    driver_opts:
+      encrypted: 1
+  private:
+    internal: true
+    driver_opts:
+      encrypted: 1
+  public:
